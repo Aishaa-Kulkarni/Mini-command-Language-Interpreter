@@ -1,0 +1,202 @@
+
+<html>
+<body>
+<h2>CS311 Programming Assignment 1</h2>
+
+<em><font color="#8B0000"> 16 points; due Thursday September 9, 11:59pm</font></em>
+
+<p>
+Use Python to finish an interpreter for the mini-command language in the Lecture
+Notes 1, extended with if-commands, global declarations, and procedure calls.
+A sample program looks like this:
+<font color="#00008B"><pre>===================================================<strong>
+
+int x;
+proc p: x = (x - 1) end;
+x = 2;
+while x : print x; call p end;
+if (x + 1) : call p else print (x-9) end
+
+</strong>===================================================</pre></font>
+Here is the execution of this program:
+<font color="#00008B"><strong><pre>
+python run.py
+Type program; OK to do it on multiple lines; terminate with  !
+  as the first symbol on a line by itself:
+
+int x;
+proc p: x = (x - 1) end;
+x = 2;
+while x : print x; call p end;
+if (x + 1) : call p else print (x-9) end
+!
+Parse tree:
+[[['int', 'x'], ['proc', 'p', [['=', 'x', ['-', 'x', '1']]]]], [['=', 'x', '2'], ['while', 'x', [['print', 'x'], ['call', 'p']]], ['if', ['+', 'x', '1'], [['call', 'p']], [['print', ['-', 'x', '9']]]]]]
+Execution:
+2
+1
+final namespace = {'x': -1, 'p': [['=', 'x', ['-', 'x', '1']]]}
+</pre></strong></font>
+The program is parsed into its tree and
+interpreted, which causes the namespace (storage) to hold
+values for <tt><font color="#00008B"><strong>x</strong></font></tt> and <tt><font color="#00008B"><strong>p</strong></font></tt>.  While the loop repeats, <tt><font color="#00008B"><strong>2</strong></font></tt> and <tt><font color="#00008B"><strong>1</strong></font></tt> are printed as <tt><font color="#00008B"><strong>x</strong></font></tt> counts down to 0.  The final value of the namespace is displayed.
+
+<p>
+Here the grammar of the language we implement:
+<font color="#00008B"><pre>===================================================<strong>
+
+PROGRAM ::=  BLOCK
+BLOCK ::= DECLIST COMMANDLIST 
+DECLIST ::=  DECLARATION ; DECLIST  |  (nothing)
+DECLARATION ::=  int VAR  |  proc VAR : BLOCK end
+COMMANDLIST ::=  COMMAND  |  COMMAND ; COMMANDLIST
+COMMAND ::=  VAR = EXPRESSSION
+             |  print EXPRESSION
+             |  while EXPRESSION : COMMANDLIST end
+             |  if EXPRESSION : COMMANDLIST else COMMANDLIST end
+             |  call VAR
+EXPRESSION ::= NUMERAL  |  VAR  |  ( EXPRESSION OPERATOR EXPRESSION )
+OPERATOR is  +  or  -
+NUMERAL  is a sequence of digits from the set, {0,1,2,...,9}
+VAR  is a string of lower-case letters, not a keyword
+
+</strong>===================================================</pre></font>
+A modified parser from Lecture Note 1 to build parse trees for this grammar has been provided.
+
+<h4>Interpreter input format</h4>
+
+<p>
+The input to the interpreter you write is the list-represented tree constructed by the parser.
+The syntax of trees is this:
+<font color="#00008B"><pre>===================================================<strong>
+
+PTREE ::=  BTREE
+BTREE ::= [ DLIST, CLIST ]
+DLIST ::=  [ DTREE* ]
+           where  DTREE*  means zero or more DTREEs
+DTREE ::=  ["int", VAR]  |  ["proc", VAR, BTREE]
+CLIST ::=  [ CTREE+ ]
+           where CTREE+  means one or more CTREEs
+CTREE ::=  ["=", VAR, ETREE]  |  ["print", ETREE]  |  ["while", ETREE, CLIST]
+        |  ["if", ETREE, CLIST, CLIST]  |  ["call", VAR]
+ETREE ::=  NUMERAL  |  VAR  |  [OP, ETREE, ETREE]
+           where  OP  is either "+" or "-"
+
+</strong>===================================================</pre></font>
+Notice how the trees match the grammar constructions.   Since the trees are nested lists, it is easy to disassemble them and compute on their parts.
+
+<h4>Interpreter operation</h4>
+
+<p>
+You will extend the mini-command interpreter so that it processes the trees for
+if-commands, declarations, and procedure calls.
+Here are the semantic concepts you must implement:
+<ul>
+<li>
+<em><font color="#8B0000">if-command</font></em>: like the while-loop: first, the test is computed to its value.  If the value is <tt><font color="#00008B"><strong>0</strong></font></tt> (false), the else-arm is executed.  Otherwise, the 
+then-arm is executed.
+<li>
+<em><font color="#8B0000">declaration</font></em>: An <tt><font color="#00008B"><strong>int x</strong></font></tt> declaration creates an entry for <tt><font color="#00008B"><strong>x</strong></font></tt> in the namespace, <em><font color="#8B0000">provided that <tt><font color="#00008B"><strong>x</strong></font></tt> is not already declared</font></em> (otherwise, it's an error that stops execution).  The initial value of <tt><font color="#00008B"><strong>x</strong></font></tt> is set to <tt><font color="#00008B"><strong>0</strong></font></tt>.
+A <tt><font color="#00008B"><strong>proc p: B end</strong></font></tt> declaration creates an entry for <tt><font color="#00008B"><strong>p</strong></font></tt> in the namespace,
+<em><font color="#8B0000">provided that <tt><font color="#00008B"><strong>p</strong></font></tt> is not already declared</font></em> (otherwise, it's an error that stops execution). 
+<tt><font color="#00008B"><strong>p</strong></font></tt> is initialized to <tt><font color="#00008B"><strong>B</strong></font></tt>.
+<li>
+<em><font color="#8B0000">call</font></em>: the code of the called procedure is extracted from the namespace and is executed on the spot.
+</ul>
+IMPORTANT:
+You <em><font color="#8B0000">must</font></em> revise the semantics of commands and expressions so that
+<em><font color="#8B0000">(i)</font></em> a variable must be declared before it is referenced in an expression
+or command; <em><font color="#8B0000">(ii)</font></em> only <tt><font color="#00008B"><strong>int</strong></font></tt> variables may be used in arithmetic or assignments; <em><font color="#8B0000">(iii)</font></em> only <tt><font color="#00008B"><strong>proc</strong></font></tt> variables may be called.
+Othewise, it's an error that stops execution.  When an error arises, the interpreter must print an appropriate message before stopping execution. 
+
+<h4>Implementation and testing</h4>
+
+A folder that contains the drivers, scanner, modified parser, and interpreter for the mini-command language has been provided.
+The first thing you should do is download this folder, open it, and test it.
+To test it, you should either
+<ol>
+<li>
+use the jupyter notebook <tt><font color="#00008B"><strong></strong></font></tt>, or
+<li>
+Open a command window and execute <tt><font color="#00008B"><strong>python run.py</strong></font></tt>
+</ol>
+You should see a prompt that asks you to type a program.  Try this:
+<font color="#00008B"><strong><pre>
+Type program; OK to do it on multiple lines; terminate with  !
+  as the first symbol on a line by itself:
+
+x = 2; y = (x + 1); print y
+!
+Parse tree:
+[[], [['=', 'x', '2'], ['=', 'y', ['+', 'x', '1']]]]
+Execution:
+3
+final namespace = {'y': 3, 'x': 2}
+</pre></strong></font>
+That is, the interpreter understands the mini-command language from Lecture Note 2.
+
+<p>
+Now, your job is to revise <tt><font color="#00008B"><strong>interpret.py</strong></font></tt> (and that file only --- no others!)
+to have if-commands, declarations, and procedures.
+
+Extend the interpreter in the standard "interpreter design pattern,"
+that is, each form of parse tree has its own <tt><font color="#00008B"><strong>interpret</strong></font></tt> function.   So,
+you must modify <tt><font color="#00008B"><strong>interpretCTREE</strong></font></tt> and add two new functions,
+<tt><font color="#00008B"><strong>interpretDLIST</strong></font></tt> and <tt><font color="#00008B"><strong>interpretDTREE</strong></font></tt>.
+
+<p>
+<em><font color="#8B0000">Remember to document the two new functions and modify the documentation
+of the other functions to match the extended language.</font></em>
+
+<p>
+<em><font color="#8B0000">Important:</font></em>
+Read the short explanation,
+<a>
+Notes on lists and dictionaries</a>, to learn how to implement procedures.
+
+
+<p>
+<em><font color="#8B0000">IMPORTANT:</font></em> Python uses indentation
+to show the nesting of commands. <em><font color="#8B0000">You can indent using either spaces or tabs, but you cannot mix them. In the provided code, spaces are used for indentation.</font></em>  (If you mix leading tabs with leading spaces you will get strange syntax errors.)   You are warned.
+
+<p>
+Write and test the interpreter in three stages:
+<ol>
+<li>
+implement <tt><font color="#00008B"><strong>if</strong></font></tt>-commands
+<li>
+add <tt><font color="#00008B"><strong>int</strong></font></tt>-declarations and modify accordingly the semantics of expressions and
+commands to operate correctly on <tt><font color="#00008B"><strong>int</strong></font></tt>-variables
+<li>
+add <tt><font color="#00008B"><strong>proc</strong></font></tt>-declarations and procedure calls
+</ol>
+There is a suite of test programs included in the folder with the prototype
+interpreter.   Use <em><font color="#8B0000">at least</font></em> these tests to check your implemetation.
+You should also devise addtional tests to see if the interpreter detects program
+errors and prints appropriate messages.
+
+Copy and paste all the test-cases-and-output
+into a file named <tt><font color="#00008B"><strong>tests.txt</strong></font></tt>, which you will submit with your interpreter.
+
+
+<h4>Submission and grading</h4>
+
+Make a new folder,
+named <tt><font color="#00008B"><strong>YourFirstNameYourLastName_ps1</strong></font></tt>, and place in it your final version of <tt><font color="#00008B"><strong>interpret.py</strong></font></tt> and also
+<tt><font color="#00008B"><strong>tests.txt</strong></font></tt>.
+Zip the folder into the <tt><font color="#00008B"><strong>.zip</strong></font></tt> file,
+<tt><font color="#00008B"><strong>YourFirstNameYourLastName_ps1.zip</strong></font></tt>, and submit the <tt><font color="#00008B"><strong>.zip</strong></font></tt> file to Blackboard.  (If you do not use the naming convention, <tt><font color="#00008B"><strong>YourFirstNameYourLastName_ps1.zip</strong></font></tt>, <em><font color="#8B0000">your work will not be graded</font></em>.)
+
+<p>
+The grader or me will study your work and your tests and apply some
+additional tests before scoring the submission.
+
+<p><em><font color="#8B0000">Important:</font></em> You may find one partner for this assignment. But it's highly recommended that this assignment be done by you, individually,
+so that you acquire some basic skills with scripting and dynamic data structures.
+It is certainly OK to discuss the assignment with the instructor, or your
+colleagues, but all the coding must be typed by you or your parntner, and all the concepts in the coding must be stored in your head so that you can reproduce them on demand.  
+</body>
+</html>
+
+
+

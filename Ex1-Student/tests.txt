@@ -1,0 +1,142 @@
+
+REQUIRED TEST CASES
+---------------------
+
+
+1.
+Input --> 
+if (2 + 1): print 99
+else print 88
+end
+!
+
+Output --> 
+scanned program: ['if', '(', '2', '+', '1', ')', ':', 'print', '99', 'else', 'print', '88', 'end']
+
+parsed program: [[], [['if', ['+', '2', '1'], [['print', '99']], [['print', '88']]]]]
+
+execution:
+Print: 99
+final namespace. = {}
+
+--------------------------------------------
+
+2a.
+Input -->
+int x;
+x = 2; print x
+!
+
+Output -->
+scanned program: ['int', 'x', ';', 'x', '=', '2', ';', 'print', 'x']
+
+parsed program: [[['int', 'x']], [['=', 'x', '2'], ['print', 'x']]]
+
+execution:
+Print: 2
+final namespace. = {'x': 2}
+
+---------------------------------------------
+
+2b.
+Input-->
+int y; int x;
+x = 2;  y = (x + 1)
+!
+
+Output -->
+scanned program: ['int', 'y', ';', 'int', 'x', ';', 'x', '=', '2', ';', 'y', '=', '(', 'x', '+', '1', ')']
+
+parsed program: [[['int', 'y'], ['int', 'x']], [['=', 'x', '2'], ['=', 'y', ['+', 'x', '1']]]]
+
+execution:
+final namespace. = {'y': 3, 'x': 2}
+
+---------------------------------------------
+
+3a.
+Input -->
+int x;
+proc p:  x = (x - 1) end;
+x = 2; call p; print x
+!
+
+Output -->
+scanned program: ['int', 'x', ';', 'proc', 'p', ':', 'x', '=', '(', 'x', '-', '1', ')', 'end', ';', 'x', '=', '2', ';', 'call', 'p', ';', 'print', 'x']
+
+parsed program: [[['int', 'x'], ['proc', 'p', [[], [['=', 'x', ['-', 'x', '1']]]]]], [['=', 'x', '2'], ['call', 'p'], ['print', 'x']]]
+
+execution:
+Print: 1
+final namespace. = {'x': 1, 'p': [['=', 'x', ['-', 'x', '1']]]}
+
+----------------------------------------------
+
+3b.
+Input -->
+int x;
+proc p: x = (x - 1) end;
+x = 2;
+while x : print x; call p end;
+if (x + 1) : call p else print (x-9) end
+!
+
+Output -->
+scanned program: ['int', 'x', ';', 'proc', 'p', ':', 'x', '=', '(', 'x', '-', '1', ')', 'end', ';', 'x', '=', '2', ';', 'while', 'x', ':', 'print', 'x', ';', 'call', 'p', 'end', ';', 'if', '(', 'x', '+', '1', ')', ':', 'call', 'p', 'else', 'print', '(', 'x', '-', '9', ')', 'end']
+
+parsed program: [[['int', 'x'], ['proc', 'p', [[], [['=', 'x', ['-', 'x', '1']]]]]], [['=', 'x', '2'], ['while', 'x', [['print', 'x'], ['call', 'p']]], ['if', ['+', 'x', '1'], [['call', 'p']], [['print', ['-', 'x', '9']]]]]]
+
+execution:
+Print: 2
+Print: 1
+final namespace. = {'x': -1, 'p': [['=', 'x', ['-', 'x', '1']]]}
+
+------------------------------------------------
+
+4a.
+Input -->
+int x;
+proc p: int y;  y = (x - 1); x = (x + 1); print y end;
+x = 2; call p; print x
+!
+
+Output -->
+scanned program: ['int', 'x', ';', 'proc', 'p', ':', 'int', 'y', ';', 'y', '=', '(', 'x', '-', '1', ')', ';', 'x', '=', '(', 'x', '+', '1', ')', ';', 'print', 'y', 'end', ';', 'x', '=', '2', ';', 'call', 'p', ';', 'print', 'x']
+
+parsed program: [[['int', 'x'], ['proc', 'p', [[['int', 'y']], [['=', 'y', ['-', 'x', '1']], ['=', 'x', ['+', 'x', '1']], ['print', 'y']]]]], [['=', 'x', '2'], ['call', 'p'], ['print', 'x']]]
+
+execution:
+Print: 1
+Print: 3
+final namespace. = {'x': 3, 'p': [[['int', 'y']], [['=', 'y', ['-', 'x', '1']], ['=', 'x', ['+', 'x', '1']], ['print', 'y']]], 'y': 1}
+
+----------------------------------------------------
+
+4b.
+Input -->
+int x;
+proc p: int x;
+        proc q: int y;  y = (x + 1); print y end; 
+        x = 9; 
+        call q; 
+        print x
+end;
+x = 2; 
+call p; print x
+!
+
+Output -->
+
+scanned program: ['int', 'x', ';', 'proc', 'p', ':', 'int', 'x', ';', 'proc', 'q', ':', 'int', 'y', ';', 'y', '=', '(', 'x', '+', '1', ')', ';', 'print', 'y', 'end', ';', 'x', '=', '9', ';', 'call', 'q', ';', 'print', 'x', 'end', ';', 'x', '=', '2', ';', 'call', 'p', ';', 'print', 'x']
+
+parsed program: [[['int', 'x'], ['proc', 'p', [[['int', 'x'], ['proc', 'q', [[['int', 'y']], [['=', 'y', ['+', 'x', '1']], ['print', 'y']]]]], [['=', 'x', '9'], ['call', 'q'], ['print', 'x']]]]], [['=', 'x', '2'], ['call', 'p'], ['print', 'x']]]
+
+execution:
+Print: 10
+Print: 9
+Print: 9
+final namespace. = {'x': 9, 'p': [[['int', 'x'], ['proc', 'q', [[['int', 'y']], [['=', 'y', ['+', 'x', '1']], ['print', 'y']]]]], [['=', 'x', '9'], ['call', 'q'], ['print', 'x']]], 'q': [[['int', 'y']], [['=', 'y', ['+', 'x', '1']], ['print', 'y']]], 'y': 10}
+
+
+
+
